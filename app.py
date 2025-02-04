@@ -18,7 +18,7 @@ key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}}, supports_credentials=True)
+CORS(app, supports_credentials=True)
 
 # --- Model Loading ---
 #Facial Detection Model

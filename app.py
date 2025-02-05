@@ -12,7 +12,7 @@ import cv2
 import os
 
 #Supabase Configuration
-load_dotenv(dotenv_path="C:/Users/Bryant Tan/OneDrive/Desktop/FacialDetection/.env")
+load_dotenv()
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
@@ -217,6 +217,7 @@ def save_embedding():
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    port = int(os.environ.get("PORT", 8080)) 
+    app.run(host="0.0.0.0", port=port)
 
 

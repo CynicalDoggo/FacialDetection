@@ -1,33 +1,28 @@
-# Use Debian-based Python image
-FROM python:3.11.7-slim-bookworm
+# Use an official Python runtime as a parent image.
+FROM python:3.9-slim
 
-# Set the working directory
+# Install system dependencies (e.g., for OpenCV and building wheels)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies (Fix SSL issues, OpenCV dependencies, and missing libraries)
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* && apt-get update
-RUN pip install --no-cache-dir --upgrade pip setuptools certifi
-RUN apt-get update --fix-missing
-RUN apt-get update && apt-get install -y --fix-missing \
-    ca-certificates \
-    libglib2.0-0 \
-    libgl1-mesa-glx \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    openssl
+# Copy the requirements file first to leverage Docker cache.
+COPY requirements.txt ./ 
 
+# Install dependencies
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy the requirements file and install dependencies
-COPY requirements.txt . 
-RUN pip install --no-cache-dir -r requirements.txt --index-url https://pypi.org/simple --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host=files.pythonhosted.org --retries 5 --timeout 60
-
-# Copy the rest of the application code
+# Copy the rest of your application code.
 COPY . .
 
-# Expose port 8080
-EXPOSE 8080
+# Expose the port Cloud Run expects your app to listen on.
+ENV PORT 8080
 
-# Command to run the app
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8080", "app:app"]
-
+# Use Waitress to serve the application
+CMD ["waitress-serve", "--listen=0.0.0.0:8080", "app:app"]

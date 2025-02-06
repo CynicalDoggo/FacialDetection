@@ -5,6 +5,7 @@ from flask_cors import CORS
 from supabase import create_client, client
 from dotenv import load_dotenv
 from tensorflow import keras
+from waitress import serve
 import tensorflow as tf
 import numpy as np
 import base64
@@ -18,7 +19,15 @@ key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+# Allow multiple origins
+CORS(app, resources={r"/*": {"origins": "https://facialrecog-2b424.web.app"}}, supports_credentials=True)
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
 # --- Model Loading ---
 #Facial Detection Model
@@ -215,9 +224,8 @@ def save_embedding():
     except Exception as e:
         print(f"Error in /save_embedding: {str(e)}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
+    
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080)) 
-    app.run(host="0.0.0.0", port=port)
-
-
+    serve(app, host="0.0.0.0", port=port, threaded=True, debug=True)

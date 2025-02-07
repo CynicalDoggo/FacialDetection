@@ -8,9 +8,11 @@ from tensorflow import keras
 from waitress import serve
 import tensorflow as tf
 import numpy as np
+import hashlib
 import base64
 import cv2
 import os
+import io
 
 #Supabase Configuration
 load_dotenv()
@@ -20,7 +22,8 @@ supabase = create_client(url, key)
 
 app = Flask(__name__)
 # Allow multiple origins
-CORS(app, resources={r"/*": {"origins": "https://facialrecog-2b424.web.app"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ["https://facialrecog-2b424.web.app", 
+                                         "http://localhost:5173"]}}, supports_credentials=True)
 
 @app.after_request
 def add_cors_headers(response):
@@ -144,6 +147,7 @@ def detect_faces_fxn():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": "Failed to process image"}), 500
+    
 @app.route('/save_embedding', methods=['POST'])
 def save_embedding():
     try:
@@ -206,13 +210,13 @@ def save_embedding():
             # Generate embedding
             try:
                 embedding = generate_embedding(face)
-                embedding_list = embedding.tolist()
+                embedding_bytes = embedding.astype(np.float32).tobytes()
             except Exception as e:
                 return jsonify({"status": "error", "message": "Embedding generation failed"}), 500
 
             # Update Supabase
             try:
-                response = supabase.table('guest').update({'facial_data': embedding_list}).eq('user_id', user_id).execute()
+                response = supabase.table('guest').update({'facial_data': embedding_bytes}).eq('user_id', user_id).execute()
                 response = supabase.table('guest').update({'facialid_consent': facialOptIn}).eq('user_id', user_id).execute()
             except Exception as e:
                 return jsonify({"status": "error", "message": f"Database update failed: {str(e)}"}), 500

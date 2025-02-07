@@ -8,11 +8,9 @@ from tensorflow import keras
 from waitress import serve
 import tensorflow as tf
 import numpy as np
-import hashlib
 import base64
 import cv2
 import os
-import io
 
 #Supabase Configuration
 load_dotenv()
@@ -210,13 +208,14 @@ def save_embedding():
             # Generate embedding
             try:
                 embedding = generate_embedding(face)
-                embedding_bytes = embedding.astype(np.float32).tobytes()
+                embedding_vector = embedding.tolist()
+                
             except Exception as e:
                 return jsonify({"status": "error", "message": "Embedding generation failed"}), 500
 
             # Update Supabase
             try:
-                response = supabase.table('guest').update({'facial_data': embedding_bytes}).eq('user_id', user_id).execute()
+                response = supabase.table('guest').update({'facial_data': embedding_vector}).eq('user_id', user_id).execute()
                 response = supabase.table('guest').update({'facialid_consent': facialOptIn}).eq('user_id', user_id).execute()
             except Exception as e:
                 return jsonify({"status": "error", "message": f"Database update failed: {str(e)}"}), 500
